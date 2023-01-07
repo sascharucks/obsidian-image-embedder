@@ -1,11 +1,11 @@
 {
 	"id": "obsidian-image-embedder",
 	"name": "Image Embedder",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "This plugin transforms a link with an image to an embed like !()[].",
 	"author": "Sascha Rucks",
 	"authorUrl": "https://thegourmetapron.com",
 	"fundingUrl": "https://www.buymeacoffee.com/suzhi",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }

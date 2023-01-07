@@ -23,21 +23,37 @@ export default class ImageEmbedder extends Plugin {
 	onunload() {
 		this.app.workspace.off("editor-paste", this.pasteHandler);
 	}
-
 }
 
 async function UrlIntoSelection(editor: Editor, evt: ClipboardEvent) {
-	const cb = evt.clipboardData!.getData("text");
-	
+
+	const cb = getClipboardText(evt);
+
 	// Prevent paste before async processing
 	evt.preventDefault();
 
 	if (await validateString(cb)) {
-		console.log("transform");
-		editor.replaceSelection(`![](${cb})`);	
+		editor.replaceSelection(`![](${cb})`);
 	} else {
 		// Still paste everthing that is not an image to embed
 		editor.replaceSelection(`${cb}`);
+	}
+}
+
+/*
+If you copy a URL on iOS Safari it will an URL Object on the clipboard without text.
+This functions ensures to get the copied url from "text" or "url".
+*/
+function getClipboardText(evt: ClipboardEvent) {
+	const cbText = evt.clipboardData!.getData("text");
+	const cbUrl = evt.clipboardData!.getData("url");
+
+	if (cbUrl.toString() != "") {
+		return cbUrl.toString();
+	} else if (cbText != "") {
+		return cbText;
+	} else {
+		return "";
 	}
 }
 
@@ -50,7 +66,7 @@ async function validateString(s: string) {
 }
 
 function isValidUrl(url: string): boolean {
-	try {	
+	try {
 		new URL(url);
 		return true;
 	} catch (err) {
@@ -63,17 +79,19 @@ If the URL fetch failes this fallback looks at the file extensions
 Image file types from here: https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
 */
 function isImageUrlFallback(url: string): boolean {
-	console.log("img fallback");
 	return (url.match(/\.(jpeg|jpg|gif|png|webp|apng|avif|jfif|pjpeg|pjp|svg|bmp|ico|cur|tif|tiff)$/) != null);
 }
 
-// Doesn't work with CORS
+/* 
+Checks Header for Content-Type "image".
+Doesn't work with CORS
+*/
 async function isImageUrl(url: string) {
 	try {
 		const response = await fetch(url, { method: 'HEAD' });
 		return response.headers.get('Content-Type')?.startsWith('image')
 	} catch {
-		// Event with a catch CORS erros will be logged to Console, see https://stackoverflow.com/questions/41515732/hide-401-console-error-in-chrome-dev-tools-getting-401-on-fetch-call
+		// CORS erros will be logged to console even when catched, see https://stackoverflow.com/questions/41515732/hide-401-console-error-in-chrome-dev-tools-getting-401-on-fetch-call
 		return isImageUrlFallback(url);
 	}
 }
