@@ -1,9 +1,11 @@
 # Paste Image URL as embed
 
-Insert external image URLs as embed using regular `Ctrl/Cmd + V`. Even works with image URLs without file extension.
+Insert external image URLs as embed using regular `Ctrl/Cmd + V`.
 This achieves the same as typing `![]()` in Markdown.
 
-Also works with the text selection via the command palette/hotkey (needs to be set manually).
+Pasting a URL only checks for the file extension.
+
+Use the command palette/hotkey (needs to be set manually) on a text selection to embed image URLs even without a file extension.
 
 ## Demo
 
