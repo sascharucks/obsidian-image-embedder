@@ -8,10 +8,10 @@ export default class ImageEmbedder extends Plugin {
 
 		this.addCommand({
 			id: 'img-embedder',
-			name: 'Embed external image',
+			name: 'Embed external image based on Content-Type and file extension',
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				const selectedText = editor.getSelection();
-				if (await validateString(selectedText)) {
+				if (isValidUrl(selectedText) && await isImageType(selectedText)) {
 					editor.replaceSelection(`![](${selectedText})`);
 				}
 			}
@@ -25,26 +25,26 @@ export default class ImageEmbedder extends Plugin {
 	}
 }
 
-async function UrlIntoSelection(editor: Editor, evt: ClipboardEvent) {
+function UrlIntoSelection(editor: Editor, evt: ClipboardEvent) {
 
 	const cb = getClipboardText(evt);
 
-	// Prevent paste before async processing
+	// Only continue if the String is a URL and has a image extension
+	if (!validateString(cb)) {
+		return;
+	}
+
+	// Prevent paste before processing
 	evt.preventDefault();
 
-	if (await validateString(cb)) {
-		editor.replaceSelection(`![](${cb})`);
-	} else {
-		// Still paste everthing that is not an image to embed
-		editor.replaceSelection(`${cb}`);
-	}
+	editor.replaceSelection(`![](${cb})`);
 }
 
 /*
 If you copy a URL on iOS Safari it will an URL Object on the clipboard without text.
 This functions ensures to get the copied url from "text" or "url".
 */
-function getClipboardText(evt: ClipboardEvent) {
+function getClipboardText(evt: ClipboardEvent): string {
 	const cbText = evt.clipboardData!.getData("text");
 	const cbUrl = evt.clipboardData!.getData("url");
 
@@ -57,9 +57,9 @@ function getClipboardText(evt: ClipboardEvent) {
 	}
 }
 
-async function validateString(s: string) {
+function validateString(s: string): boolean {
 	if (isValidUrl(s)) {
-		return await isImageUrl(s)
+		return isImageUrl(s)
 	} else {
 		return false;
 	}
@@ -75,23 +75,24 @@ function isValidUrl(url: string): boolean {
 };
 
 /*
-If the URL fetch failes this fallback looks at the file extensions
+Matches common file extensions for images. Is not working on image URLs without file type.
 Image file types from here: https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
 */
-function isImageUrlFallback(url: string): boolean {
+function isImageUrl(url: string): boolean {
 	return (url.match(/\.(jpeg|jpg|gif|png|webp|apng|avif|jfif|pjpeg|pjp|svg|bmp|ico|cur|tif|tiff)$/) != null);
 }
 
 /* 
 Checks Header for Content-Type "image".
-Doesn't work with CORS
+Doesn't work with CORS.
+Uses as Fallback standard file type recognition.
 */
-async function isImageUrl(url: string) {
+async function isImageType(url: string) {
 	try {
 		const response = await fetch(url, { method: 'HEAD' });
 		return response.headers.get('Content-Type')?.startsWith('image')
 	} catch {
 		// CORS erros will be logged to console even when catched, see https://stackoverflow.com/questions/41515732/hide-401-console-error-in-chrome-dev-tools-getting-401-on-fetch-call
-		return isImageUrlFallback(url);
+		return isImageUrl(url);
 	}
 }
